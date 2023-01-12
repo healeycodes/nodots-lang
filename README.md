@@ -1,6 +1,6 @@
 # nodots lang
 
-A small programming language without any dots called **nodots**.
+A small programming language without any dots called **nodots**. Okay, fine, you can use dots for floats.
 
 Here's an example program (see `tests.py` for more examples).
 
