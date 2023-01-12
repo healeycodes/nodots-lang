@@ -4,7 +4,7 @@ A small programming language without any dots called **nodots**. Okay, fine, you
 
 Here's an example program (see `tests.py` for more examples).
 
-```text
+```python
 # booleans
 (true or false) and !true;
 
