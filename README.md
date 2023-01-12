@@ -1,6 +1,6 @@
 # nodots lang
 
-A small programming language without any dots called **nodots**. Okay, fine, you can use dots for floats.
+A small programming language without any dots called **nodots**. I had some trouble with a previous language when it came to mutating via dot access –so I decided: no dots this time (okay, fine, you can use dots for floats).
 
 Here's an example program (see `tests.py` for more examples).
 
