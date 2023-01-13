@@ -1,4 +1,4 @@
-from interpreter import interpret
+from interpreter import NilValue, interpret
 
 kitchen_sink_example = """
 # booleans
@@ -79,6 +79,23 @@ assert_or_log(interpret("true or false;").value, True)
 assert_or_log(interpret("false or false;").value, False)
 assert_or_log(interpret("(false or false) or true;").value, True)
 assert_or_log(interpret("(false or false) and true;").value, False)
+assert_or_log(interpret("a = nil; if (true) a = 2; fi a;").value, 2)
+assert_or_log(interpret("a = nil; if (false or true) a = 2; fi a;").value, 2)
+assert_or_log(
+    interpret(
+        """
+fun truth()
+  return true;
+nuf a = nil;
+if (truth())
+  a = 2;
+fi
+a;
+"""
+    ).value,
+    2,
+)
+assert_or_log(isinstance(interpret("a = nil; if (false) a = 2; fi a;"), NilValue), True)
 
 # compare
 assert_or_log(interpret("1 == 1;").value, True)
@@ -109,6 +126,7 @@ assert_or_log(interpret("a = 1; fun alter() a = 2; nuf alter(); a;").value, 2)
 assert_or_log(interpret("fun a(b, c) return b * c; nuf -a(3, 4);").value, -12)
 assert_or_log(interpret("fun a(b, c) return b * c; nuf a(3, 4) * a(3, 4);").value, 144)
 assert_or_log(type(interpret("fun a() 1; nuf a; b = a; b;").value).__name__, "function")
+assert_or_log(isinstance(interpret("fun a() 1; nuf"), NilValue), True)
 assert_or_log(
     interpret(
         """
@@ -148,6 +166,25 @@ assert_or_log(str(interpret("a;")), "1:1 [error] unknown variable 'a'")
 assert_or_log(
     str(interpret("b = 7; b();")),
     "1:8 [error] [(NumberValue: 7.0)] only functions are callable",
+)
+assert_or_log(
+    str(interpret("if (1) fi")),
+    "1:1 [error] [(NumberValue: 1.0)] if expressions expect a boolean",
+)
+assert_or_log(
+    str(
+        interpret(
+            """
+    a = 1000;
+    fun decr()
+      a = a - 1;
+      decr();
+    nuf
+    decr();
+    """
+        )
+    ),
+    "5:7 [error] maximum recursion depth exceeded",
 )
 
 print("tests passed!")

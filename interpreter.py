@@ -71,7 +71,10 @@ class Value:
 
     def call_as_func(self, line, col, arguments) -> Value:
         self.check_type(line, col, "FunctionValue", "only functions are callable")
-        return self.value(line, col, arguments)
+        try:
+            return self.value(line, col, arguments)
+        except RecursionError:
+            raise LanguageError(line, col, "maximum recursion depth exceeded")
 
 
 class BoolValue(Value):
@@ -397,7 +400,11 @@ def eval_return_stmt(node: Tree, context: Context) -> ReturnValue:
 def eval_if_stmt(node: Tree, context: Context):
     # the tree shape is as follows (any number of childs)
     # ['if', '(', expr, ')', child_1, child_2, 'fi']
-    if eval_expression(node.children[2], context).value != True:
+    if_check = eval_expression(node.children[2], context)
+    if_check.check_type(
+        node.meta.line, node.meta.column, "BoolValue", "if expressions expect a boolean"
+    )
+    if if_check.value != True:
         return NilValue(None)
     start, end = node.children.index(")") + 1, node.children.index("fi")
     for decl in node.children[start:end]:
