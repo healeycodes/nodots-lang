@@ -117,6 +117,18 @@ assert_or_log(interpret("(2 * 2);").value, 4)
 assert_or_log(interpret("(2 * 2) * (7 + 8);").value, 60)
 assert_or_log(interpret("(1 / 1);").value, 1)
 assert_or_log(interpret("a = (6 * 6); a;").value, 36)
+assert_or_log(
+    interpret(
+        """
+sum = 0;
+for (i = 0; i < 5; i = i + 1)
+  sum = sum + i;
+rof
+sum;
+"""
+    ).value,
+    10,
+)
 
 # scope and functions
 assert_or_log(interpret("a = 1; a;").value, 1)
@@ -187,6 +199,10 @@ assert_or_log(
         )
     ),
     "5:7 [error] maximum recursion depth exceeded",
+)
+assert_or_log(
+    str(interpret("for (i = 0; i < 5; i = i + 1) rof i;")),
+    "1:35 [error] unknown variable 'i'",
 )
 
 print("tests passed!")

@@ -4,10 +4,11 @@ GRAMMAR = r"""
     declaration     : fun_decl | statement
     fun_decl        : "fun" function "nuf"
 
-    statement       : expression_stmt | return_stmt | if_stmt
+    statement       : expression_stmt | return_stmt | if_stmt | for_stmt
     expression_stmt : expression? ";"
     return_stmt     : "return" expression? ";"
     if_stmt         : "if" "(" expression ")" declaration* "fi"
+    for_stmt        : "for" "(" expression_stmt expression_stmt expression ")" declaration* "rof"
 
     expression      : assignment
     assignment      : identifier "=" assignment | logic_or

@@ -393,7 +393,6 @@ def eval_expression_stmt(node: Tree, context: Context) -> Value:
     return NilValue(None)
 
 
-
 def eval_return_stmt(node: Tree, context: Context) -> ReturnValue:
     for child in node.children:
         # filter out syntax like `return` and `;`
@@ -420,6 +419,31 @@ def eval_if_stmt(node: Tree, context: Context):
     return NilValue(None)
 
 
+def eval_for_stmt(node: Tree, context: Context):
+    for_context = context.get_child_context()
+    parts: List[Tree] = []
+    for child in node.children:
+        if isinstance(child, Tree):
+            parts.append(child)
+    initial_expr_stmt, limit_expr_stmt, increment_expr = parts[:3]
+    eval_expression_stmt(initial_expr_stmt, for_context)
+
+    while True:
+        limit_check = eval_expression_stmt(limit_expr_stmt, for_context)
+        limit_check.check_type(
+            limit_expr_stmt.meta.line,
+            limit_expr_stmt.meta.column,
+            "BoolValue",
+            "expected boolean",
+        )
+        if not limit_check.value:
+            break
+        for decl_expr in parts[3:]:
+            eval_declaration(decl_expr, for_context)
+        eval_expression(increment_expr, for_context)
+    return NilValue(None)
+
+
 def eval_statement(node: Tree, context: Context) -> ReturnValue | Value:
     for child in node.children:
         if child.data == "expression_stmt":
@@ -428,6 +452,8 @@ def eval_statement(node: Tree, context: Context) -> ReturnValue | Value:
             return eval_return_stmt(child, context)
         elif child.data == "if_stmt":
             return eval_if_stmt(child, context)
+        elif child.data == "for_stmt":
+            return eval_for_stmt(child, context)
     raise Exception("unreachable")
 
 
