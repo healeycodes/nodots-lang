@@ -106,7 +106,9 @@ assert_or_log(interpret("2 < 3;").value, True)
 assert_or_log(interpret("3 > 2;").value, True)
 
 # expressions
+assert_or_log(isinstance(interpret(";"), NilValue), True)
 assert_or_log(interpret("-1;").value, -1)
+assert_or_log(isinstance(interpret("-1;;"), NilValue), True)
 assert_or_log(interpret("(1);").value, 1)
 assert_or_log(interpret("-(1);").value, -1)
 assert_or_log(interpret("(1 + 1);").value, 2)

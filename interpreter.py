@@ -386,7 +386,12 @@ def eval_expression(node: Tree, context: Context) -> Value:
 
 
 def eval_expression_stmt(node: Tree, context: Context) -> Value:
-    return eval_expression(node.children[0], context)
+    # support empty expression stmts
+    for child in node.children:
+        if isinstance(child, Tree):
+            return eval_expression(child, context)
+    return NilValue(None)
+
 
 
 def eval_return_stmt(node: Tree, context: Context) -> ReturnValue:
