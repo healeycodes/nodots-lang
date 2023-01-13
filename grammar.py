@@ -4,7 +4,7 @@ GRAMMAR = r"""
     declaration     : fun_decl | statement
     fun_decl        : "fun" function "nuf"
 
-    statement       : expression_stmt | return_stmt | if_stmt | for_stmt
+    statement       : expression_stmt | return_stmt | if_stmt
     expression_stmt : expression? ";"
     return_stmt     : "return" expression? ";"
     if_stmt         : "if" "(" expression ")" declaration* "fi"
