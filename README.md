@@ -2,7 +2,7 @@
 
 # nodots lang
 
-A small programming language without any dots called **nodots**. I had some trouble with a previous language when it came to mutating via dot access –so I decided: no dots this time (okay, fine, you can use dots for floats).
+A small programming language without any dots called **nodots**. I had some trouble with a previous language when it came to mutating via dot access – so I decided: no dots this time (okay, fine, you can use dots for floats).
 
 Here's an example program (see `tests.py` for more examples).
 
@@ -81,8 +81,6 @@ See `grammar.py` for the [EBNF](https://lark-parser.readthedocs.io/en/latest/gra
 
 ## Project TODOs
 
-Most important is probably expanding recursive function calls to a flat loop. So that a naive recursive fibonacci function called with `100` doesn't result in a Python `RecursionError` error.
-
 Statements:
 - assert
 - for
@@ -95,3 +93,7 @@ Standard functions:
 - type / casting
 - input / output
 - type() / casting
+
+Maybe:
+- Expand recursive function calls to a flat loop. So that a naive recursive fibonacci function called with `100` doesn't result in a Python `RecursionError` error.
+
