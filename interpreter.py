@@ -393,12 +393,13 @@ def eval_expression_stmt(node: Tree, context: Context) -> Value:
     return NilValue(None)
 
 
-def eval_return_stmt(node: Tree, context: Context) -> ReturnValue:
+def eval_return_stmt(node: Tree, context: Context) -> ReturnValue | NilValue:
     for child in node.children:
         # filter out syntax like `return` and `;`
         if isinstance(child, Tree):
             return ReturnValue(eval_expression(child, context))
-    raise Exception("unreachable")
+    # handle `return;``
+    return NilValue(None)
 
 
 def eval_if_stmt(node: Tree, context: Context):

@@ -169,6 +169,20 @@ fib(10);
     ).value,
     55.0,
 )
+assert_or_log(
+    isinstance(
+        interpret(
+            """
+fun _()
+  return;
+nuf
+_();
+"""
+        ),
+        NilValue,
+    ),
+    True,
+)
 
 # errors
 assert_or_log(str(interpret("(0 / 0);")), "1:2 [error] cannot divide by zero")
