@@ -39,12 +39,14 @@ fib(10);
 
 # closures!
 fun closure()
+  z = 0;
   fun inner()
+    z = z + 1;
     return z;
   nuf
   return inner;
 nuf
-closure()(); # 2
+closure()(); # 1
 """
 
 
@@ -58,7 +60,7 @@ def assert_or_log(a, b):
 
 
 # example programs
-assert_or_log(interpret(kitchen_sink_example).value, 2)
+assert_or_log(interpret(kitchen_sink_example).value, 1)
 
 # basic types
 assert_or_log(interpret("1;").value, 1)

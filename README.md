@@ -45,12 +45,14 @@ fib(10);
 
 # closures!
 fun closure()
+  z = 0;
   fun inner()
+    z = z + 1;
     return z;
   nuf
   return inner;
 nuf
-closure()(); # 2
+closure()(); # 1
 ```
 
 ## Install
