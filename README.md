@@ -21,13 +21,20 @@ log("Hello, World!");
 # variables!
 some_var = 2;
 
+# loops!
+sum = 0;
+for (i = 0; i < 5; i = i + 1)
+  sum = sum + i;
+rof
+log(sum);
+
 # functions!
 fun some_func(b, c)
   return b * c;
 nuf
 some_func(some_var, 5);
 
-# fibonacci
+# naive fibonacci
 fun fib(x)
   if (x == 0 or x == 1)
     return x;
@@ -35,16 +42,6 @@ fun fib(x)
   return fib(x - 1) + fib(x - 2);
 nuf
 fib(10);
-
-# functions have their own scope!
-z = 1;
-fun mutate_z()
-  z = 2;
-  some_local_var = 3;
-nuf
-mutate_z();
-z; # <-- z is now `2`
-# some_local_var; <-- would be an error
 
 # closures!
 fun closure()
@@ -81,15 +78,12 @@ See `grammar.py` for the [EBNF](https://lark-parser.readthedocs.io/en/latest/gra
 
 ## Project TODOs
 
-Statements:
-- assert
-- for
-
 Data structures:
 - list()
 - dict()
 
 Standard functions:
+- assert()
 - type / casting
 - input / output
 - type() / casting
