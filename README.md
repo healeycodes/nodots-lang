@@ -84,7 +84,6 @@ Data structures:
 
 Standard functions:
 - assert()
-- type / casting
 - input / output
 - type() / casting
 
