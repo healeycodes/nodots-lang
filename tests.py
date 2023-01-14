@@ -183,6 +183,22 @@ _();
     ),
     True,
 )
+assert_or_log(
+    interpret(
+        """
+j = 0;
+fun early_return()
+  for (i = 0; i < 5; i = i + 1)
+    j = j + 1;
+    return;
+  rof
+nuf
+early_return();
+j;
+"""
+    ).value,
+    1,
+)
 
 # errors
 assert_or_log(str(interpret("(0 / 0);")), "1:2 [error] cannot divide by zero")

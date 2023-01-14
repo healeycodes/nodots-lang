@@ -97,8 +97,9 @@ class FunctionValue(Value):
     pass
 
 
-class ReturnValue(Value):
-    pass
+class ReturnEscape(Exception):
+    def __init__(self, value: Value):
+        self.value = value
 
 
 def log(line: int, col: int, values: List[Value]):
@@ -393,13 +394,13 @@ def eval_expression_stmt(node: Tree, context: Context) -> Value:
     return NilValue(None)
 
 
-def eval_return_stmt(node: Tree, context: Context) -> ReturnValue | NilValue:
+def eval_return_stmt(node: Tree, context: Context):
     for child in node.children:
         # filter out syntax like `return` and `;`
         if isinstance(child, Tree):
-            return ReturnValue(eval_expression(child, context))
+            raise ReturnEscape(eval_expression(child, context))
     # handle `return;``
-    return NilValue(None)
+    raise ReturnEscape(NilValue(None))
 
 
 def eval_if_stmt(node: Tree, context: Context):
@@ -413,10 +414,7 @@ def eval_if_stmt(node: Tree, context: Context):
         return NilValue(None)
     start, end = node.children.index(")") + 1, node.children.index("fi")
     for decl in node.children[start:end]:
-        value = eval_declaration(decl, context)
-        # allow returning to escape if blocks!
-        if isinstance(value, ReturnValue):
-            return value
+        eval_declaration(decl, context)
     return NilValue(None)
 
 
@@ -445,7 +443,7 @@ def eval_for_stmt(node: Tree, context: Context):
     return NilValue(None)
 
 
-def eval_statement(node: Tree, context: Context) -> ReturnValue | Value:
+def eval_statement(node: Tree, context: Context) -> Value:
     for child in node.children:
         if child.data == "expression_stmt":
             return eval_expression_stmt(child, context)
@@ -489,9 +487,10 @@ def eval_function(node: Tree, context: Context) -> NilValue:
         for i, arg in enumerate(arguments):
             per_call_context.set(parameters[i], arg)
         for child in body:
-            possible_return_value = eval_declaration(child, per_call_context)
-            if isinstance(possible_return_value, ReturnValue):
-                return possible_return_value.value
+            try:
+                eval_declaration(child, per_call_context)
+            except ReturnEscape as e:
+                return e.value
         return NilValue(None)
 
     context.set(key, FunctionValue(function))
