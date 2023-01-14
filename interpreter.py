@@ -102,6 +102,14 @@ class ReturnEscape(Exception):
         self.value = value
 
 
+class BreakEscape(Exception):
+    pass
+
+
+class ContinueEscape(Exception):
+    pass
+
+
 def log(line: int, col: int, values: List[Value]):
     for v in values:
         print(v.value)
@@ -438,7 +446,12 @@ def eval_for_stmt(node: Tree, context: Context):
         if not limit_check.value:
             break
         for decl_expr in parts[3:]:
-            eval_declaration(decl_expr, for_context)
+            try:
+                eval_declaration(decl_expr, for_context)
+            except BreakEscape:
+                return NilValue(None)
+            except ContinueEscape:
+                break
         eval_expression(increment_expr, for_context)
     return NilValue(None)
 
@@ -453,6 +466,10 @@ def eval_statement(node: Tree, context: Context) -> Value:
             return eval_if_stmt(child, context)
         elif child.data == "for_stmt":
             return eval_for_stmt(child, context)
+        elif child.data == "break_stmt":
+            raise BreakEscape()
+        elif child.data == "continue_stmt":
+            raise ContinueEscape()
     raise Exception("unreachable")
 
 
@@ -491,6 +508,18 @@ def eval_function(node: Tree, context: Context) -> NilValue:
                 eval_declaration(child, per_call_context)
             except ReturnEscape as e:
                 return e.value
+            except BreakEscape:
+                raise LanguageError(
+                    child.meta.line,
+                    child.meta.column,
+                    "can't use 'break' outside of for loop body",
+                )
+            except ContinueEscape:
+                raise LanguageError(
+                    child.meta.line,
+                    child.meta.column,
+                    "can't use 'continue' outside of for loop body",
+                )
         return NilValue(None)
 
     context.set(key, FunctionValue(function))
@@ -514,7 +543,20 @@ def eval_declaration(node: Tree, context: Context):
 def eval_program(node: Tree, context: Context):
     last: NilValue | Value = NilValue(None)
     for child in node.children:
-        last = eval_declaration(child, context)
+        try:
+            last = eval_declaration(child, context)
+        except BreakEscape:
+            raise LanguageError(
+                child.meta.line,
+                child.meta.column,
+                "can't use 'break' outside of for loop body",
+            )
+        except ContinueEscape:
+            raise LanguageError(
+                child.meta.line,
+                child.meta.column,
+                "can't use 'continue' outside of for loop body",
+            )
     return last
 
 

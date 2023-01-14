@@ -129,6 +129,32 @@ sum;
     ).value,
     10,
 )
+assert_or_log(
+    interpret(
+        """
+a = 0;
+for (i = 0; i < 5; i = i + 1)
+  a = a + 1;
+  break;
+rof
+a;
+"""
+    ).value,
+    1,
+)
+assert_or_log(
+    interpret(
+        """
+a = 0;
+for (i = 0; i < 5; i = i + 1)
+  continue;
+  a = 1;
+rof
+a;
+"""
+    ).value,
+    0,
+)
 
 # scope and functions
 assert_or_log(interpret("a = 1; a;").value, 1)
@@ -233,6 +259,22 @@ assert_or_log(
 assert_or_log(
     str(interpret("for (i = 0; i < 5; i = i + 1) rof i;")),
     "1:35 [error] unknown variable 'i'",
+)
+assert_or_log(
+    str(interpret("break;")),
+    "1:1 [error] can't use 'break' outside of for loop body",
+)
+assert_or_log(
+    str(interpret("continue;")),
+    "1:1 [error] can't use 'continue' outside of for loop body",
+)
+assert_or_log(
+    str(interpret("for (i = 0; i < 5; i = i + 1) fun b() break; nuf b(); rof")),
+    "1:39 [error] can't use 'break' outside of for loop body",
+)
+assert_or_log(
+    str(interpret("for (i = 0; i < 5; i = i + 1) fun b() continue; nuf b(); rof")),
+    "1:39 [error] can't use 'continue' outside of for loop body",
 )
 
 print("tests passed!")
