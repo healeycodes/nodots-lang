@@ -64,7 +64,7 @@ assert_or_log(interpret(kitchen_sink_example).value, 1)
 
 # basic types
 assert_or_log(interpret("1;").value, 1)
-assert_or_log(interpret("1.5;").value, 1.5)
+assert_or_log(interpret("-1.5;").value, -1.5)
 assert_or_log(interpret('"1";').value, "1")
 assert_or_log(interpret("true;").value, True)
 assert_or_log(interpret("false;").value, False)
