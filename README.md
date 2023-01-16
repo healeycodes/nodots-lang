@@ -1,6 +1,9 @@
 [![Tests](https://github.com/healeycodes/nodots-lang/actions/workflows/python-app.yml/badge.svg)](https://github.com/healeycodes/nodots-lang/actions/workflows/python-app.yml)
 
 # nodots lang
+> My blog post: [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
+
+<br>
 
 A small programming language without any dots called **nodots**. I had some trouble with a previous language when it came to mutating via dot access – so I decided: no dots this time (okay, fine, you can use dots for floats).
 
