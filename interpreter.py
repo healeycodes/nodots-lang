@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, List
-from lark import Lark, Tree
+from lark import Lark, Tree as LarkTree, Token as LarkToken
 from grammar import GRAMMAR
 
 parser = Lark(
@@ -10,6 +10,45 @@ parser = Lark(
     keep_all_tokens=True,
     propagate_positions=True,
 )
+
+
+class DotDict(dict):
+    """https://stackoverflow.com/a/13520518"""
+
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __init__(self, dct):
+        for key, value in dct.items():
+            if hasattr(value, "keys"):
+                value = DotDict(value)
+            self[key] = value
+
+
+class Tree(DotDict):
+    pass
+
+
+class Token(DotDict):
+    def __eq__(self, other) -> bool:
+        return self.value == other
+
+
+def build_nodots_tree(children: List[LarkTree | LarkToken]) -> List[Tree | Token]:
+    return [
+        Tree(
+            {
+                "kind": "node",
+                "data": str(child.data),
+                "meta": DotDict({"line": child.meta.line, "column": child.meta.column}),
+                "children": build_nodots_tree(child.children),
+            }
+        )
+        if isinstance(child, LarkTree)
+        else Token({"kind": "token", "value": child.value})
+        for child in children
+    ]
 
 
 class LanguageError(Exception):
@@ -147,7 +186,7 @@ def eval_arguments(node: Tree, context: Context) -> List[Value]:
         eval_expression(child, context)
         for child in node.children
         # filter out '(' and ')'
-        if isinstance(child, Tree)
+        if child.kind == "node"
     ]
 
 
@@ -185,7 +224,7 @@ def eval_call(node: Tree, context: Context) -> Value:
             if node.children[i - 1] == "(":
                 arguments.append(None)
             elif (
-                isinstance(node.children[i - 1], Tree)
+                node.children[i - 1].kind == "node"
                 and node.children[i - 1].data == "arguments"
             ):
                 arguments.append(node.children[i - 1])
@@ -397,7 +436,7 @@ def eval_expression(node: Tree, context: Context) -> Value:
 def eval_expression_stmt(node: Tree, context: Context) -> Value:
     # support empty expression stmts
     for child in node.children:
-        if isinstance(child, Tree):
+        if child.kind == "node":
             return eval_expression(child, context)
     return NilValue(None)
 
@@ -405,7 +444,7 @@ def eval_expression_stmt(node: Tree, context: Context) -> Value:
 def eval_return_stmt(node: Tree, context: Context):
     for child in node.children:
         # filter out syntax like `return` and `;`
-        if isinstance(child, Tree):
+        if child.kind == "node":
             raise ReturnEscape(eval_expression(child, context))
     # handle `return;``
     raise ReturnEscape(NilValue(None))
@@ -430,7 +469,7 @@ def eval_for_stmt(node: Tree, context: Context):
     for_context = context.get_child_context()
     parts: List[Tree] = []
     for child in node.children:
-        if isinstance(child, Tree):
+        if child.kind == "node":
             parts.append(child)
     initial_expr_stmt, limit_expr_stmt, increment_expr = parts[:3]
     eval_expression_stmt(initial_expr_stmt, for_context)
@@ -476,7 +515,7 @@ def eval_statement(node: Tree, context: Context) -> Value:
 def eval_parameters(node: Tree, context: Context) -> List[str]:
     parameters = []
     for child in node.children:
-        if isinstance(child, Tree) and child.data == "identifier":
+        if child.kind == "node" and child.data == "identifier":
             parameters.append(key_from_identifier_node(child))
     return parameters
 
@@ -564,7 +603,7 @@ def interpret(source: str, opts={"debug": True}):
     root_context = Context(None, opts=opts)
     inject_standard_library(root_context)
     try:
-        root = parser.parse(source)
+        root = build_nodots_tree([parser.parse(source)])[0]
         result = eval_program(root, context=root_context)
         return result
     except LanguageError as e:
