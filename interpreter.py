@@ -44,28 +44,10 @@ class Token:
 
 
 def print_tree(node: Tree | Token, depth=0):
-    print(depth * " " + f"{node}")
+    print(depth * "-" + f" {node}")
     if node.kind == "tree":
         for child in node.children:
             print_tree(child, depth + 1)
-
-
-def count_tree(node: Tree | Token) -> int:
-    count = 1
-    if node.kind == "tree":
-        for child in node.children:
-            count += count_tree(child)
-    return count
-
-
-def compress_tree(node: Tree | Token) -> Tree | Token:
-    if node.kind == "tree":
-        for i, child in enumerate(node.children):
-            if child.kind == "tree" and len(child.children) == 1:
-                node.children[i] = child.children[0]
-            compress_tree(child)
-        return node
-    raise NotImplemented
 
 
 def build_nodots_tree(children: List[LarkTree | LarkToken]) -> List[Tree | Token]:
@@ -555,11 +537,11 @@ def eval_function(node: Tree | Token, context: Context) -> NilValue:
     key = key_from_identifier_node(node.children[0])
 
     parameters = []
-    if node.children.index(")") - node.children.index("(") == 2: # type: ignore
+    if node.children.index(")") - node.children.index("(") == 2:  # type: ignore
         parameters = eval_parameters(
-            node.children[node.children.index("(") + 1], context # type: ignore
+            node.children[node.children.index("(") + 1], context  # type: ignore
         )
-    body = node.children[node.children.index(")") + 1 :] # type: ignore
+    body = node.children[node.children.index(")") + 1 :]  # type: ignore
 
     def function(line, col, arguments):
         if len(arguments) != len(parameters):
