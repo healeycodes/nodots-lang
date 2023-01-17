@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Any, List
+import typing
 from lark import Lark, Tree as LarkTree, Token as LarkToken
 from grammar import GRAMMAR
 
@@ -11,49 +12,71 @@ parser = Lark(
     propagate_positions=True,
 )
 
-
-class DotDict(dict):
-    """https://stackoverflow.com/a/13520518"""
-
-    __getattr__ = dict.__getitem__
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-    def __init__(self, dct):
-        for key, value in dct.items():
-            if hasattr(value, "keys"):
-                value = DotDict(value)
-            self[key] = value
+Meta = typing.NamedTuple("Meta", [("line", int), ("column", int)])
 
 
 class Tree:
-    __slots__ = ['kind', 'data', 'meta', 'children']
-    def __init__(self, data, meta, children) -> None:
-        self.kind = "node"
+    kind = "tree"
+
+    def __init__(self, data: str, meta: Meta, children: List[Tree | Token]) -> None:
         self.data = data
         self.meta = meta
         self.children = children
 
+    def __str__(self) -> str:
+        return f"{self.data} (node)"
+
 
 class Token:
-    __slots__ = ['kind', 'value']
-    def __init__(self, value) -> None:
-        self.kind = "token"
+    kind = "token"
+    data = "token"
+    children: List[Any] = []
+
+    def __init__(self, value: str, meta: Meta) -> None:
         self.value = value
+        self.meta = meta
 
     def __eq__(self, other) -> bool:
         return self.value == other
+
+    def __str__(self) -> str:
+        return self.value
+
+
+def print_tree(node: Tree | Token, depth=0):
+    print(depth * " " + f"{node}")
+    if node.kind == "tree":
+        for child in node.children:
+            print_tree(child, depth + 1)
+
+
+def count_tree(node: Tree | Token) -> int:
+    count = 1
+    if node.kind == "tree":
+        for child in node.children:
+            count += count_tree(child)
+    return count
+
+
+def compress_tree(node: Tree | Token) -> Tree | Token:
+    if node.kind == "tree":
+        for i, child in enumerate(node.children):
+            if child.kind == "tree" and len(child.children) == 1:
+                node.children[i] = child.children[0]
+            compress_tree(child)
+        return node
+    raise NotImplemented
 
 
 def build_nodots_tree(children: List[LarkTree | LarkToken]) -> List[Tree | Token]:
     return [
         Tree(
             str(child.data),
-            DotDict({"line": child.meta.line, "column": child.meta.column}),
+            Meta(child.meta.line, child.meta.column),
             build_nodots_tree(child.children),
         )
         if isinstance(child, LarkTree)
-        else Token(child.value)
+        else Token(child.value, Meta(child.line, child.column))  # type: ignore
         for child in children
     ]
 
@@ -168,7 +191,7 @@ def inject_standard_library(context: Context):
         context.set(func.__name__, FunctionValue(func))
 
 
-def key_from_identifier_node(node: Tree) -> str:
+def key_from_identifier_node(node: Tree | Token) -> str:
     # we're not looking for the idenitifier's "reference"
     # when we context.set, we will update the lookup table
     # so we can just dig the literal string value here
@@ -179,7 +202,7 @@ def eval_identifier(node: Any, context: Context):
     return context.get(node.meta.line, node.meta.column, node.children[0].value)
 
 
-def eval_primary(node: Tree, context: Context) -> Value:
+def eval_primary(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_identifier(node.children[0], context)
     # 0th is '(' and 2nd is ')'
@@ -188,16 +211,16 @@ def eval_primary(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_arguments(node: Tree, context: Context) -> List[Value]:
+def eval_arguments(node: Tree | Token, context: Context) -> List[Value]:
     return [
         eval_expression(child, context)
         for child in node.children
         # filter out '(' and ')'
-        if child.kind == "node"
+        if child.kind == "tree"
     ]
 
 
-def eval_call(node: Tree, context: Context) -> Value:
+def eval_call(node: Tree | Token, context: Context) -> Value:
     # primary aka not a function call
     if len(node.children) == 1:
         for child in node.children:
@@ -224,14 +247,14 @@ def eval_call(node: Tree, context: Context) -> Value:
     current_func = eval_primary(node.children[0], context)
 
     i = 0
-    arguments: List[None | Tree] = []
+    arguments: List[None | Tree | Token] = []
     while i < len(node.children) - 1:
         i += 1
         if node.children[i] == ")":
             if node.children[i - 1] == "(":
                 arguments.append(None)
             elif (
-                node.children[i - 1].kind == "node"
+                node.children[i - 1].kind == "tree"
                 and node.children[i - 1].data == "arguments"
             ):
                 arguments.append(node.children[i - 1])
@@ -248,7 +271,7 @@ def eval_call(node: Tree, context: Context) -> Value:
     return current_func
 
 
-def eval_unary(node: Tree, context: Context) -> Value:
+def eval_unary(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_call(node.children[0], context)
     op = node.children[0]
@@ -274,7 +297,7 @@ def eval_unary(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_factor(node: Tree, context: Context) -> Value:
+def eval_factor(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_unary(node.children[0], context)
     left = eval_unary(node.children[0], context)
@@ -306,7 +329,7 @@ def eval_factor(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_term(node: Tree, context: Context) -> Value:
+def eval_term(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_factor(node.children[0], context)
     left = eval_factor(node.children[0], context)
@@ -331,7 +354,7 @@ def eval_term(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_comparison(node: Tree, context: Context) -> Value:
+def eval_comparison(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_term(node.children[0], context)
     left = eval_term(node.children[0], context)
@@ -360,7 +383,7 @@ def eval_comparison(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_equality(node: Tree, context: Context) -> Value:
+def eval_equality(node: Tree | Token, context: Context) -> Value:
     if len(node.children) == 1:
         return eval_comparison(node.children[0], context)
 
@@ -374,7 +397,7 @@ def eval_equality(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_logic_and(node: Tree, context: Context) -> Value | BoolValue:
+def eval_logic_and(node: Tree | Token, context: Context) -> Value | BoolValue:
     if len(node.children) == 1:
         return eval_equality(node.children[0], context)
     left = eval_equality(node.children[0], context)
@@ -398,7 +421,7 @@ def eval_logic_and(node: Tree, context: Context) -> Value | BoolValue:
     raise Exception("unreachable")
 
 
-def eval_logic_or(node: Tree, context: Context) -> Value | BoolValue:
+def eval_logic_or(node: Tree | Token, context: Context) -> Value | BoolValue:
     if len(node.children) == 1:
         return eval_logic_and(node.children[0], context)
     left = eval_logic_and(node.children[0], context)
@@ -422,7 +445,7 @@ def eval_logic_or(node: Tree, context: Context) -> Value | BoolValue:
     raise Exception("unreachable")
 
 
-def eval_assignment(node: Tree, context: Context) -> NilValue | Value:
+def eval_assignment(node: Tree | Token, context: Context) -> NilValue | Value:
     if node.children[0].data == "identifier":
         key = key_from_identifier_node(node.children[0])
         value = eval_assignment(node.children[2], context)
@@ -433,31 +456,31 @@ def eval_assignment(node: Tree, context: Context) -> NilValue | Value:
     raise Exception("unreachable")
 
 
-def eval_expression(node: Tree, context: Context) -> Value:
+def eval_expression(node: Tree | Token, context: Context) -> Value:
     for child in node.children:
         if child.data == "assignment":
             return eval_assignment(child, context)
     raise Exception("unreachable")
 
 
-def eval_expression_stmt(node: Tree, context: Context) -> Value:
+def eval_expression_stmt(node: Tree | Token, context: Context) -> Value:
     # support empty expression stmts
     for child in node.children:
-        if child.kind == "node":
+        if child.kind == "tree":
             return eval_expression(child, context)
     return NilValue(None)
 
 
-def eval_return_stmt(node: Tree, context: Context):
+def eval_return_stmt(node: Tree | Token, context: Context):
     for child in node.children:
         # filter out syntax like `return` and `;`
-        if child.kind == "node":
+        if child.kind == "tree":
             raise ReturnEscape(eval_expression(child, context))
     # handle `return;``
     raise ReturnEscape(NilValue(None))
 
 
-def eval_if_stmt(node: Tree, context: Context):
+def eval_if_stmt(node: Tree | Token, context: Context):
     # the tree shape is as follows (any number of childs)
     # ['if', '(', expr, ')', child_1, child_2, 'fi']
     if_check = eval_expression(node.children[2], context)
@@ -466,18 +489,18 @@ def eval_if_stmt(node: Tree, context: Context):
     )
     if if_check.value != True:
         return NilValue(None)
-    start, end = node.children.index(")") + 1, node.children.index("fi")
+    start, end = node.children.index(")") + 1, node.children.index("fi")  # type: ignore
     for decl in node.children[start:end]:
         eval_declaration(decl, context)
     return NilValue(None)
 
 
-def eval_for_stmt(node: Tree, context: Context):
+def eval_for_stmt(node: Tree | Token, context: Context):
     for_context = context.get_child_context()
     parts: List[Tree] = []
     for child in node.children:
-        if child.kind == "node":
-            parts.append(child)
+        if child.kind == "tree":
+            parts.append(child)  # type: ignore
     initial_expr_stmt, limit_expr_stmt, increment_expr = parts[:3]
     eval_expression_stmt(initial_expr_stmt, for_context)
 
@@ -502,7 +525,7 @@ def eval_for_stmt(node: Tree, context: Context):
     return NilValue(None)
 
 
-def eval_statement(node: Tree, context: Context) -> Value:
+def eval_statement(node: Tree | Token, context: Context) -> Value:
     for child in node.children:
         if child.data == "expression_stmt":
             return eval_expression_stmt(child, context)
@@ -519,24 +542,24 @@ def eval_statement(node: Tree, context: Context) -> Value:
     raise Exception("unreachable")
 
 
-def eval_parameters(node: Tree, context: Context) -> List[str]:
+def eval_parameters(node: Tree | Token, context: Context) -> List[str]:
     parameters = []
     for child in node.children:
-        if child.kind == "node" and child.data == "identifier":
+        if child.kind == "tree" and child.data == "identifier":
             parameters.append(key_from_identifier_node(child))
     return parameters
 
 
-def eval_function(node: Tree, context: Context) -> NilValue:
+def eval_function(node: Tree | Token, context: Context) -> NilValue:
     function_context = context.get_child_context()
     key = key_from_identifier_node(node.children[0])
 
     parameters = []
-    if node.children.index(")") - node.children.index("(") == 2:
+    if node.children.index(")") - node.children.index("(") == 2: # type: ignore
         parameters = eval_parameters(
-            node.children[node.children.index("(") + 1], context
+            node.children[node.children.index("(") + 1], context # type: ignore
         )
-    body = node.children[node.children.index(")") + 1 :]
+    body = node.children[node.children.index(")") + 1 :] # type: ignore
 
     def function(line, col, arguments):
         if len(arguments) != len(parameters):
@@ -572,12 +595,12 @@ def eval_function(node: Tree, context: Context) -> NilValue:
     return NilValue(None)
 
 
-def eval_fun_decl(node: Tree, context: Context):
+def eval_fun_decl(node: Tree | Token, context: Context):
     # 0th is 'fun', 2nd is 'nuf'
     return eval_function(node.children[1], context)
 
 
-def eval_declaration(node: Tree, context: Context):
+def eval_declaration(node: Tree | Token, context: Context):
     for child in node.children:
         if child.data == "statement":
             return eval_statement(child, context)
@@ -586,7 +609,7 @@ def eval_declaration(node: Tree, context: Context):
     raise Exception("unreachable")
 
 
-def eval_program(node: Tree, context: Context):
+def eval_program(node: Tree | Token, context: Context):
     last: NilValue | Value = NilValue(None)
     for child in node.children:
         try:
