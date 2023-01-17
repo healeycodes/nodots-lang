@@ -26,11 +26,21 @@ class DotDict(dict):
             self[key] = value
 
 
-class Tree(DotDict):
-    pass
+class Tree:
+    __slots__ = ['kind', 'data', 'meta', 'children']
+    def __init__(self, data, meta, children) -> None:
+        self.kind = "node"
+        self.data = data
+        self.meta = meta
+        self.children = children
 
 
-class Token(DotDict):
+class Token:
+    __slots__ = ['kind', 'value']
+    def __init__(self, value) -> None:
+        self.kind = "token"
+        self.value = value
+
     def __eq__(self, other) -> bool:
         return self.value == other
 
@@ -38,15 +48,12 @@ class Token(DotDict):
 def build_nodots_tree(children: List[LarkTree | LarkToken]) -> List[Tree | Token]:
     return [
         Tree(
-            {
-                "kind": "node",
-                "data": str(child.data),
-                "meta": DotDict({"line": child.meta.line, "column": child.meta.column}),
-                "children": build_nodots_tree(child.children),
-            }
+            str(child.data),
+            DotDict({"line": child.meta.line, "column": child.meta.column}),
+            build_nodots_tree(child.children),
         )
         if isinstance(child, LarkTree)
-        else Token({"kind": "token", "value": child.value})
+        else Token(child.value)
         for child in children
     ]
 
