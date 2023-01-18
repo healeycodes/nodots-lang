@@ -1,4 +1,3 @@
-import time
 from interpreter import interpret
 
 program = """
@@ -14,6 +13,4 @@ for (i = 0; i < 20; i = i + 1)
 rof
 """
 
-t = time.time()
 interpret(program, opts={"debug": False})
-print(time.time() - t)
