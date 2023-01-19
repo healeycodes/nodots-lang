@@ -1,7 +1,9 @@
 [![Tests](https://github.com/healeycodes/nodots-lang/actions/workflows/python-app.yml/badge.svg)](https://github.com/healeycodes/nodots-lang/actions/workflows/python-app.yml)
 
 # nodots lang
-> My blog post: [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
+> My blog posts:
+> - [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
+> - [Profiling and Optimizing an Interpreter](https://healeycodes.com/profiling-and-optimizing-an-interpreter)
 
 <br>
 
