@@ -83,6 +83,11 @@ See `ideas.md` for what might be coming next.
 
 See `grammar.py` for the [EBNF](https://lark-parser.readthedocs.io/en/latest/grammar.html#general-syntax-and-notes)-ish language grammar.
 
+As linked at the top of this README, I've written two blog posts about this project.
+
+- [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
+- [Profiling and Optimizing an Interpreter](https://healeycodes.com/profiling-and-optimizing-an-interpreter)
+
 ## Project TODOs
 
 Data structures:
