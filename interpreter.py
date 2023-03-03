@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, List
+from typing import Any, Dict, List
 import typing
 from lark import Lark, Tree as LarkTree, Token as LarkToken
 from grammar import GRAMMAR
@@ -148,6 +148,16 @@ class FunctionValue(Value):
     pass
 
 
+class DictValue(Value):
+    value: Dict[str, Value]
+    pass
+
+
+class ListValue(Value):
+    value: List[Value]
+    pass
+
+
 class ReturnEscape(Exception):
     def __init__(self, value: Value):
         self.value = value
@@ -166,11 +176,219 @@ def log(line: int, col: int, values: List[Value]):
         print(v.value)
 
 
+def dictionary(line: int, col: int, values: List[Value]):
+    if len(values) % 2 != 0:
+        raise LanguageError(
+            line,
+            col,
+            f"dict expects an even number of args e.g. `k, v, k, v`, got: {list(map(lambda x: str(x), values))}",
+        )
+
+    ret = DictValue({})
+    for i in range(0, len(values), 2):
+        key = values[i]
+        try:
+            key.check_type(
+                line, col, "StringValue", f"only strings or numbers can be keys"
+            )
+        except:
+            key.check_type(
+                line, col, "NumberValue", "only strings or numbers can be keys"
+            )
+        value = values[i + 1]
+        ret.value[key.value] = value
+    return ret
+
+
+def listof(line: int, col: int, values: List[Value]):
+    return ListValue(values)
+
+
+def mut(line: int, col: int, values: List[Value]):
+    if len(values) != 3:
+        raise LanguageError(
+            line,
+            col,
+            f"mut() expects three args (object, index, value), got {values}",
+        )
+
+    list_value: ListValue | None = None
+    dict_value: DictValue | None = None
+    try:
+        values[0].check_type(
+            line, col, "ListValue", "only dicts or lists can be called with mut()"
+        )
+        assert isinstance(values[0], ListValue)
+        list_value = values[0]
+    except:
+        values[0].check_type(
+            line, col, "DictValue", "only dicts or lists can be called with mut()"
+        )
+        assert isinstance(values[0], DictValue)
+        dict_value = values[0]
+
+    if list_value:
+        values[1].check_type(
+            line,
+            col,
+            "NumberValue",
+            "lists can only be indexed by numbers",
+        )
+        index: int
+        if values[1].value < 0 or not values[1].value.is_integer():
+            raise LanguageError(
+                line,
+                col,
+                f"list index must be a positive whole number, got: {values[1].value}",
+            )
+        if values[1].value >= len(list_value.value):
+            raise LanguageError(
+                line,
+                col,
+                f"list index out of bounds, len: {len(list_value.value)}, got: {values[1].value}",
+            )
+        index = int(values[1].value)
+        list_value.value[index] = values[2]
+        return
+
+    if dict_value:
+        key: str
+        try:
+            values[1].check_type(
+                line,
+                col,
+                "StringValue",
+                "lists can only be indexed by strings or numbers",
+            )
+            key = values[1].value
+        except:
+            values[1].check_type(
+                line,
+                col,
+                "NumberValue",
+                "lists can only be indexed by strings or numbers",
+            )
+            key = str(values[1].value)
+        dict_value.value[key] = values[2]
+        return
+
+
+def at(line: int, col: int, values: List[Value]) -> Value:
+    if len(values) != 2:
+        raise LanguageError(
+            line,
+            col,
+            f"at() expects two args (index, value), got {values}",
+        )
+
+    list_value: ListValue | None = None
+    dict_value: DictValue | None = None
+    try:
+        values[0].check_type(
+            line, col, "ListValue", "only dicts or lists can be called with mut()"
+        )
+        assert isinstance(values[0], ListValue)
+        list_value = values[0]
+    except:
+        values[0].check_type(
+            line, col, "DictValue", "only dicts or lists can be called with mut()"
+        )
+        assert isinstance(values[0], DictValue)
+        dict_value = values[0]
+
+    if list_value:
+        values[1].check_type(
+            line,
+            col,
+            "NumberValue",
+            "lists can only be indexed by numbers",
+        )
+        index: int
+        if values[1].value < 0 or not values[1].value.is_integer():
+            raise LanguageError(
+                line,
+                col,
+                f"list index must be a positive whole number, got: {values[1].value}",
+            )
+        if values[1].value >= len(list_value.value):
+            raise LanguageError(
+                line,
+                col,
+                f"list index out of bounds, len: {len(list_value.value)} got: {values[1].value}",
+            )
+
+        index = int(values[1].value)
+        return list_value.value[index]
+
+    if dict_value:
+        key: str
+        try:
+            values[1].check_type(
+                line,
+                col,
+                "StringValue",
+                "lists can only be indexed by strings or numbers",
+            )
+            key = values[1].value
+        except:
+            values[1].check_type(
+                line,
+                col,
+                "NumberValue",
+                "lists can only be indexed by strings or numbers",
+            )
+            key = str(values[1].value)
+        if not key in dict_value.value:
+            return NilValue(None)
+        return dict_value.value[key]
+
+    raise Exception("unreachable")
+
+
+def keysof(line: int, col: int, values: List[Value]) -> ListValue:
+    if len(values) != 1:
+        raise LanguageError(
+            line,
+            col,
+            f"keys() expects one args (dict), got {values}",
+        )
+    values[0].check_type(
+        line,
+        col,
+        "DictValue",
+        "only dicts can be called with keys()",
+    )
+    return ListValue([StringValue(k) for k in values[0].value.keys()])
+
+
+def vals(line: int, col: int, values: List[Value]) -> ListValue:
+    if len(values) != 1:
+        raise LanguageError(
+            line,
+            col,
+            f"vals() expects one args (dict), got {values}",
+        )
+    values[0].check_type(
+        line,
+        col,
+        "DictValue",
+        "only dicts can be called with vals()",
+    )
+    return ListValue(list(values[0].value.values()))
+
+
 def inject_standard_library(context: Context):
-    for func in [
-        log,
-    ]:
-        context.set(func.__name__, FunctionValue(func))
+    funcs = {
+        "log": log,
+        "dict": dictionary,
+        "list": listof,
+        "mut": mut,
+        "at": at,
+        "keys": keysof,
+        "vals": vals,
+    }
+    for name, func in funcs.items():
+        context.set(name, FunctionValue(func))
 
 
 def key_from_identifier_node(node: Tree | Token) -> str:
