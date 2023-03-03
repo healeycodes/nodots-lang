@@ -26,6 +26,21 @@ log("Hello, World!");
 # variables!
 some_var = 2;
 
+# lists!
+some_list = list(-1, 3, 4);
+at(some_list, 0); # -1
+mut(some_list, 0, -2); # as in _mutate_
+at(some_list, 0); # -2
+
+# dictionaries!
+some_dict = dict("a", 2);
+mut(some_dict, "a", "hi!");
+at(some_dict, "a"); # "hi!"
+
+# (also)
+keys(some_dict);
+vals(some_dict);
+
 # loops!
 sum = 0;
 for (i = 0; i < 5; i = i + 1)
