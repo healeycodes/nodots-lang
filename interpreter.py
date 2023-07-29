@@ -350,7 +350,7 @@ def keysof(line: int, col: int, values: List[Value]) -> ListValue:
         raise LanguageError(
             line,
             col,
-            f"keys() expects one args (dict), got {values}",
+            f"keys() expects one arg (dict), got {values}",
         )
     values[0].check_type(
         line,
@@ -366,7 +366,7 @@ def vals(line: int, col: int, values: List[Value]) -> ListValue:
         raise LanguageError(
             line,
             col,
-            f"vals() expects one args (dict), got {values}",
+            f"vals() expects one arg (dict), got {values}",
         )
     values[0].check_type(
         line,
