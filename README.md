@@ -33,7 +33,7 @@ mut(some_list, 0, -2); # as in _mutate_
 at(some_list, 0); # -2
 
 # dictionaries!
-some_dict = dict("a", 2);
+some_dict = dict("a", 2); # (k, v, k, v, ...)
 mut(some_dict, "a", "hi!");
 at(some_dict, "a"); # "hi!"
 
