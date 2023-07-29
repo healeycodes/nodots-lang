@@ -15,6 +15,21 @@ log("Hello, World!");
 # variables!
 some_var = 2;
 
+# lists!
+some_list = list(-1, 3, 4);
+at(some_list, 0); # -1
+mut(some_list, 0, -2); # as in _mutate_
+at(some_list, 0); # -2
+
+# dictionaries!
+some_dict = dict("a", 2);
+mut(some_dict, "a", "hi!");
+at(some_dict, "a"); # "hi!"
+
+# (also)
+keys(some_dict);
+vals(some_dict);
+
 # loops!
 sum = 0;
 for (i = 0; i < 5; i = i + 1)
@@ -70,6 +85,75 @@ assert_or_log(interpret("true;").value, True)
 assert_or_log(interpret("false;").value, False)
 assert_or_log(interpret("nil;").value, None)
 assert_or_log(interpret("nil == nil;").value, True)
+
+# dicts
+assert_or_log(interpret('dict("a", "b");').value["a"].value, "b")
+assert_or_log(interpret('dict("1", "b");').value["1"].value, "b")
+assert_or_log(
+    str(interpret('dict("a");')),
+    "1:1 [error] dict expects an even number of args e.g. `k, v, k, v`, got: ['(StringValue: a)']",
+)
+assert_or_log(
+    interpret(
+        """
+a = dict("_", "b");
+mut(a, "_", "c");
+at(a, "_");
+"""
+    ).value,
+    "c",
+)
+assert_or_log(
+    interpret(
+        """
+a = dict();
+at(a, "missing");
+"""
+    ).value,
+    None,
+)
+assert_or_log(
+    interpret(
+        """
+a = dict("b", 2);
+keys(a);
+"""
+    ).value[0].value,
+    "b",
+)
+assert_or_log(
+    interpret(
+        """
+a = dict("b", 2);
+vals(a);
+"""
+    ).value[0].value,
+    2,
+)
+
+# lists
+assert_or_log(interpret('list("a");').value[0].value, "a")
+assert_or_log(
+    interpret(
+        """
+a = list("b");
+mut(a, 0, "c");
+at(a, 0);
+"""
+    ).value,
+    "c",
+)
+assert_or_log(
+    str(
+        interpret(
+            """
+a = list();
+at(a, 1);
+"""
+        )
+    ),
+    "3:1 [error] list index out of bounds, len: 0 got: 1.0",
+)
 
 # logic
 assert_or_log(interpret("true and true;").value, True)
