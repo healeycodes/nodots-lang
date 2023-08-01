@@ -108,6 +108,9 @@ class Value:
         self.value = value
 
     def __str__(self) -> str:
+        if self.__class__.__name__ == "FunctionValue":
+            # TODO can we provide more debug info here?
+            return "(FunctionValue)"
         return f"({self.__class__.__name__}: {self.value})"
 
     def equals(self, other):
@@ -377,7 +380,78 @@ def vals(line: int, col: int, values: List[Value]) -> ListValue:
     return ListValue(list(values[0].value.values()))
 
 
-def inject_standard_library(context: Context):
+def read(line: int, col: int, values: List[Value]) -> Value:
+    chunk_size = 1024
+    if len(values) != 2:
+        raise LanguageError(
+            line,
+            col,
+            f"read() expects two args (string, function), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+        )
+    values[0].check_type(
+        line,
+        col,
+        "StringValue",
+        f"read() expects a string file path as the first arg, got {values[0]}",
+    )
+    values[1].check_type(
+        line,
+        col,
+        "FunctionValue",
+        f"read() expects a read function as the second arg, got {values[1]}",
+    )
+    file_path = values[0].value
+    read_function = values[1]
+    try:
+        with open(file_path, "r") as f:
+            while True:
+                b = f.read(chunk_size)
+                read_function.call_as_func(line, col, [StringValue(b)])
+                if b == "":
+                    break
+    except Exception as e:
+        raise LanguageError(line, col, f'error reading "{file_path}": (py: {e})')
+    return StringValue("")
+
+
+def join(line: int, col: int, values: List[Value]) -> Value:
+    if len(values) != 2:
+        raise LanguageError(
+            line,
+            col,
+            f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+        )
+
+    # (string, string)
+    if values[0].__class__.__name__ == "StringValue":
+        if values[0].__class__.__name__ != "StringValue":
+            raise LanguageError(
+                line,
+                col,
+                f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values)))}",
+            )
+        return StringValue(values[0].value + values[1].value)
+    elif values[0].__class__.__name__ == "ListValue":
+        if values[0].__class__.__name__ != "ListValue":
+            raise LanguageError(
+                line,
+                col,
+                f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values)))}",
+            )
+        ret = []
+        for v in values[0].value:
+            ret.append(v)
+        for v in values[1].value:
+            ret.append(v)
+        return ListValue(ret)
+    raise LanguageError(
+        line,
+        col,
+        f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+    )
+
+
+def inject_builtins(context: Context):
     funcs = {
         "log": log,
         "dict": dictionary,
@@ -386,6 +460,8 @@ def inject_standard_library(context: Context):
         "at": at,
         "keys": keysof,
         "vals": vals,
+        "read": read,
+        "join": join,
     }
     for name, func in funcs.items():
         context.set(name, FunctionValue(func))
@@ -829,9 +905,25 @@ def eval_program(node: Tree | Token, context: Context):
     return last
 
 
+def inject_std_lib(context: Context):
+    source = """
+    fun read_all(file_path)
+        ret = "";
+        fun each_chunk(chunk)
+            ret = join(ret, chunk);
+        nuf
+        read(file_path, each_chunk);
+        return ret;
+    nuf
+    """
+    root = build_nodots_tree([parser.parse(source)])[0]
+    eval_program(root, context=context)
+
+
 def interpret(source: str, opts={"debug": True}):
     root_context = Context(None, opts=opts)
-    inject_standard_library(root_context)
+    inject_builtins(root_context)
+    inject_std_lib(root_context)
     try:
         root = build_nodots_tree([parser.parse(source)])[0]
         result = eval_program(root, context=root_context)
