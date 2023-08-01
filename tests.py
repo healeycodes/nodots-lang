@@ -376,6 +376,10 @@ assert_or_log(
     str(interpret("read(1, 1, 1);")),
     "1:1 [error] read() expects two args (string, function), got (NumberValue: 1.0), (NumberValue: 1.0), (NumberValue: 1.0)",
 )
+assert_or_log(
+    str(interpret("join(1, 1);")),
+    "1:1 [error] join() expects two args (string, string) or (list, list), got (NumberValue: 1.0), (NumberValue: 1.0)",
+)
 
 # i/o
 assert_or_log(
