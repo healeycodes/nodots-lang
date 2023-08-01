@@ -105,10 +105,6 @@ As linked at the top of this README, I've written two blog posts about this proj
 
 ## Project TODOs
 
-Data structures:
-- list()
-- dict()
-
 Standard functions:
 - assert()
 - input / output
@@ -116,4 +112,3 @@ Standard functions:
 
 Maybe:
 - Expand recursive function calls to a flat loop. So that a naive recursive fibonacci function called with `100` doesn't result in a Python `RecursionError` error.
-
