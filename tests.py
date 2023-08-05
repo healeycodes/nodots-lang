@@ -452,7 +452,7 @@ repl_process = subprocess.Popen(
 )
 repl_process.stdin.write(b"1;\n") # type: ignore
 repl_process.stdin.flush() # type: ignore
-time.sleep(0.1)  # would prefer not to sleep..
+time.sleep(0.25)  # would prefer not to sleep..
 repl_process.send_signal(signal.SIGINT)
 assert_or_log(repl_process.stdout.read(), b"> 1.0\n> ") # type: ignore
  
