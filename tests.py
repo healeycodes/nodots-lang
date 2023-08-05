@@ -407,28 +407,28 @@ assert_or_log(
 )
 
 # write str
-write_path = "./_test_write.txt"
-data = "1"
-rm_file(write_path)
+write_path_1 = "./_test_write.txt"
+data_1 = "1"
+rm_file(write_path_1)
 assert_or_log(
-    interpret(f'write("{write_path}", "{data}");').value,
+    interpret(f'write("{write_path_1}", "{data_1}");').value,
     None,
 )
-with open(write_path, "r") as f:
-    assert f.read() == data
-rm_file(write_path)
+with open(write_path_1, "r") as f:
+    assert f.read() == data_1
+rm_file(write_path_1)
 
 # write num
-write_path = "./_test_write.txt"
+write_path_2 = "./_test_write.txt"
 data = 1
-rm_file(write_path)
+rm_file(write_path_2)
 assert_or_log(
-    interpret(f'write("{write_path}", "{data}");').value,
+    interpret(f'write("{write_path_2}", "{data}");').value,
     None,
 )
-with open(write_path, "r") as f:
+with open(write_path_2, "r") as f:
     assert f.read() == str(data)
-rm_file(write_path)
+rm_file(write_path_2)
 
 # stdlib
 assert_or_log(
