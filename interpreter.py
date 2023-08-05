@@ -210,7 +210,7 @@ def listof(line: int, col: int, values: List[Value]):
     return ListValue(values)
 
 
-def mut(line: int, col: int, values: List[Value]):
+def mut(line: int, col: int, values: List[Value]) -> NilValue:
     if len(values) != 3:
         raise LanguageError(
             line,
@@ -255,7 +255,7 @@ def mut(line: int, col: int, values: List[Value]):
             )
         index = int(values[1].value)
         list_value.value[index] = values[2]
-        return
+        return NilValue(None)
 
     if dict_value:
         key: str
@@ -276,7 +276,7 @@ def mut(line: int, col: int, values: List[Value]):
             )
             key = str(values[1].value)
         dict_value.value[key] = values[2]
-        return
+    return NilValue(None)
 
 
 def at(line: int, col: int, values: List[Value]) -> Value:
@@ -480,23 +480,6 @@ def join(line: int, col: int, values: List[Value]) -> Value:
         col,
         f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
     )
-
-
-def inject_builtins(context: Context):
-    funcs = {
-        "log": log,
-        "dict": dictionary,
-        "list": listof,
-        "mut": mut,
-        "at": at,
-        "keys": keysof,
-        "vals": vals,
-        "read": read,
-        "write": write,
-        "join": join,
-    }
-    for name, func in funcs.items():
-        context.set(name, FunctionValue(func))
 
 
 def key_from_identifier_node(node: Tree | Token) -> str:
@@ -937,6 +920,23 @@ def eval_program(node: Tree | Token, context: Context):
     return last
 
 
+def inject_builtins(context: Context):
+    funcs = {
+        "log": log,
+        "dict": dictionary,
+        "list": listof,
+        "mut": mut,
+        "at": at,
+        "keys": keysof,
+        "vals": vals,
+        "read": read,
+        "write": write,
+        "join": join,
+    }
+    for name, func in funcs.items():
+        context.set(name, FunctionValue(func))
+
+
 def inject_std_lib(context: Context):
     source = """
     fun read_all(file_path)
@@ -952,12 +952,31 @@ def inject_std_lib(context: Context):
     eval_program(root, context=context)
 
 
-def interpret(source: str, opts={"debug": True}):
-    root_context = Context(None, opts=opts)
-    inject_builtins(root_context)
-    inject_std_lib(root_context)
+def inject_all(context: Context):
+    inject_builtins(context)
+    inject_std_lib(context)
+
+
+def get_root(source: str):
     try:
-        root = build_nodots_tree([parser.parse(source)])[0]
+        parsed = parser.parse(source)
+    except Exception as e:
+        # Usually everything after the first line isn't helpful for a user
+        # TODO: surface the full parser error during development
+        raise Exception(f"{e}".split("\n")[0])
+    return build_nodots_tree([parsed])[0]
+
+
+def get_context(opts: Dict[str, bool]) -> Context:
+    root_context = Context(None, opts=opts)
+    inject_all(root_context)
+    return root_context
+
+
+def interpret(source: str, opts={"debug": False}):
+    try:
+        root_context = get_context(opts)
+        root = get_root(source)
         result = eval_program(root, context=root_context)
         return result
     except LanguageError as e:

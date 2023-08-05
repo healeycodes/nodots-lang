@@ -1,4 +1,7 @@
 import os
+import signal
+import subprocess
+import time
 from interpreter import NilValue, interpret
 
 
@@ -442,5 +445,16 @@ assert_or_log(
     ),
     "# this file is used for integration tests e.g. read()\n",
 )
+
+# repl
+repl_process = subprocess.Popen(
+    ["python3", "./repl.py"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+)
+repl_process.stdin.write(b"1;\n") # type: ignore
+repl_process.stdin.flush() # type: ignore
+time.sleep(0.1)  # would prefer not to sleep..
+repl_process.send_signal(signal.SIGINT)
+assert_or_log(repl_process.stdout.read(), b"> 1.0\n> ") # type: ignore
+ 
 
 print("tests passed!")
