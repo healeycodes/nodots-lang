@@ -119,8 +119,14 @@ class Value:
     def not_equals(self, other):
         return BoolValue(self.value != other.value)
 
-    def check_type(self, line, col, some_type, message):
-        if self.__class__.__name__ != some_type:
+    def check_type(self, line, col, some_type_or_types: str | List[str], message):
+        if type(some_type_or_types) == str:
+            if self.__class__.__name__ != some_type_or_types:
+                raise LanguageError(line, col, f"[{self}] {message}")
+        else:
+            for some_type in some_type_or_types:
+                if self.__class__.__name__ == some_type:
+                    return
             raise LanguageError(line, col, f"[{self}] {message}")
 
     def call_as_func(self, line, col, arguments) -> Value:
@@ -386,7 +392,7 @@ def read(line: int, col: int, values: List[Value]) -> Value:
         raise LanguageError(
             line,
             col,
-            f"read() expects two args (string, function), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+            f"read() expects two args (string, function), got {values}",
         )
     values[0].check_type(
         line,
@@ -412,6 +418,34 @@ def read(line: int, col: int, values: List[Value]) -> Value:
     except Exception as e:
         raise LanguageError(line, col, f'error reading "{file_path}": (py: {e})')
     return StringValue("")
+
+
+def write(line: int, col: int, values: List[Value]) -> Value:
+    if len(values) != 2:
+        raise LanguageError(
+            line,
+            col,
+            f"write() expects two args (string, string | number), got {values}",
+        )
+    values[0].check_type(
+        line,
+        col,
+        "StringValue",
+        f"write() expects a (string) file path as the first arg, got {values[0]}",
+    )
+    values[1].check_type(
+        line,
+        col,
+        ["StringValue", "NumberValue"],
+        f"write() expects a (string | number) as the second arg, got {values[1]}",
+    )
+    file_path = values[0].value
+    try:
+        with open(file_path, "a") as f:
+            f.write(values[1].value)
+    except Exception as e:
+        raise LanguageError(line, col, f'error writing "{file_path}": (py: {e})')
+    return NilValue(None)
 
 
 def join(line: int, col: int, values: List[Value]) -> Value:
@@ -461,6 +495,7 @@ def inject_builtins(context: Context):
         "keys": keysof,
         "vals": vals,
         "read": read,
+        "write": write,
         "join": join,
     }
     for name, func in funcs.items():

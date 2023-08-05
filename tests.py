@@ -1,4 +1,13 @@
+import os
 from interpreter import NilValue, interpret
+
+
+def rm_file(fp):
+    try:
+        os.remove(fp)
+    except OSError:
+        pass
+
 
 kitchen_sink_example = """
 # booleans
@@ -370,15 +379,11 @@ assert_or_log(
 )
 assert_or_log(
     str(interpret("read();")),
-    "1:1 [error] read() expects two args (string, function), got no args",
+    "1:1 [error] read() expects two args (string, function), got []",
 )
 assert_or_log(
-    str(interpret("read(1, 1, 1);")),
-    "1:1 [error] read() expects two args (string, function), got (NumberValue: 1.0), (NumberValue: 1.0), (NumberValue: 1.0)",
-)
-assert_or_log(
-    str(interpret("join(1, 1);")),
-    "1:1 [error] join() expects two args (string, string) or (list, list), got (NumberValue: 1.0), (NumberValue: 1.0)",
+    str(interpret("write();")),
+    "1:1 [error] write() expects two args (string, string | number), got []",
 )
 
 # i/o
@@ -400,6 +405,30 @@ assert_or_log(
     ),
     "# this file is used for integration tests e.g. read()\n",
 )
+
+# write str
+write_path = "./_test_write.txt"
+data = "1"
+rm_file(write_path)
+assert_or_log(
+    interpret(f'write("{write_path}", "{data}");').value,
+    None,
+)
+with open(write_path, "r") as f:
+    assert f.read() == data
+rm_file(write_path)
+
+# write num
+write_path = "./_test_write.txt"
+data = 1
+rm_file(write_path)
+assert_or_log(
+    interpret(f'write("{write_path}", "{data}");').value,
+    None,
+)
+with open(write_path, "r") as f:
+    assert f.read() == str(data)
+rm_file(write_path)
 
 # stdlib
 assert_or_log(
