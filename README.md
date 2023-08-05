@@ -73,6 +73,15 @@ fun closure()
   return inner;
 nuf
 closure()(); # 1
+
+# i/o!
+write("./foo", "bar");
+data = read_all("./foo");
+
+fun read_function(chunk)
+  log(chunk);
+nuf
+read("./foo", read_function);
 ```
 
 ## Install
@@ -94,8 +103,6 @@ closure()(); # 1
 
 It's a tree-walk interpreter implemented in Python, using [Lark](https://lark-parser.readthedocs.io/en/latest/index.html) for parsing.
 
-See `ideas.md` for what might be coming next.
-
 See `grammar.py` for the [EBNF](https://lark-parser.readthedocs.io/en/latest/grammar.html#general-syntax-and-notes)-ish language grammar.
 
 As linked at the top of this README, I've written two blog posts about this project.
@@ -105,15 +112,7 @@ As linked at the top of this README, I've written two blog posts about this proj
 
 ## Project TODOs
 
-Data structures:
-- list()
-- dict()
-
 Standard functions:
+- more file/dir/system functions
 - assert()
-- input / output
 - type() / casting
-
-Maybe:
-- Expand recursive function calls to a flat loop. So that a naive recursive fibonacci function called with `100` doesn't result in a Python `RecursionError` error.
-
