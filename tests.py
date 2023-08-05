@@ -1,4 +1,13 @@
+import os
 from interpreter import NilValue, interpret
+
+
+def rm_file(fp):
+    try:
+        os.remove(fp)
+    except OSError:
+        pass
+
 
 kitchen_sink_example = """
 # booleans
@@ -118,7 +127,9 @@ assert_or_log(
 a = dict("b", 2);
 keys(a);
 """
-    ).value[0].value,
+    )
+    .value[0]
+    .value,
     "b",
 )
 assert_or_log(
@@ -127,7 +138,9 @@ assert_or_log(
 a = dict("b", 2);
 vals(a);
 """
-    ).value[0].value,
+    )
+    .value[0]
+    .value,
     2,
 )
 
@@ -309,6 +322,11 @@ j;
     1,
 )
 
+# builtins
+assert_or_log(interpret('join("a", "b");').value, "ab")
+assert_or_log(interpret('at(join(list("a"), list("b")), 0);').value, "a")
+assert_or_log(interpret('at(join(list("a"), list("b")), 1);').value, "b")
+
 # errors
 assert_or_log(str(interpret("(0 / 0);")), "1:2 [error] cannot divide by zero")
 assert_or_log(
@@ -358,6 +376,71 @@ assert_or_log(
 assert_or_log(
     str(interpret("for (i = 0; i < 5; i = i + 1) fun b() continue; nuf b(); rof")),
     "1:39 [error] can't use 'continue' outside of for loop body",
+)
+assert_or_log(
+    str(interpret("read();")),
+    "1:1 [error] read() expects two args (string, function), got []",
+)
+assert_or_log(
+    str(interpret("write();")),
+    "1:1 [error] write() expects two args (string, string | number), got []",
+)
+
+# i/o
+assert_or_log(
+    str(
+        interpret(
+            """
+                data = nil;
+                fun read_function(chunk)
+                  # first call: the entire file
+                  # second call: an empty string
+                  if (chunk != "")
+                    data = chunk;
+                  fi
+                nuf;
+                read("./example.txt", read_function);
+                data;"""
+        ).value
+    ),
+    "# this file is used for integration tests e.g. read()\n",
+)
+
+# write str
+write_path_1 = "./_test_write.txt"
+data_1 = "1"
+rm_file(write_path_1)
+assert_or_log(
+    interpret(f'write("{write_path_1}", "{data_1}");').value,
+    None,
+)
+with open(write_path_1, "r") as f:
+    assert f.read() == data_1
+rm_file(write_path_1)
+
+# write num
+write_path_2 = "./_test_write.txt"
+data = 1
+rm_file(write_path_2)
+assert_or_log(
+    interpret(f'write("{write_path_2}", "{data}");').value,
+    None,
+)
+with open(write_path_2, "r") as f:
+    assert f.read() == str(data)
+rm_file(write_path_2)
+
+# stdlib
+assert_or_log(
+    str(
+        interpret(
+            """
+                data = read_all("./example.txt");
+                data;
+"""
+        ).value
+    ),
+    "# this file is used for integration tests e.g. read()\n",
 )
 
 print("tests passed!")
