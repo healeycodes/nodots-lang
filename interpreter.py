@@ -108,9 +108,6 @@ class Value:
         self.value = value
 
     def __str__(self) -> str:
-        if self.__class__.__name__ == "FunctionValue":
-            # TODO can we provide more debug info here?
-            return "(FunctionValue)"
         return f"({self.__class__.__name__}: {self.value})"
 
     def equals(self, other):
