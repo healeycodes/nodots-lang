@@ -31,6 +31,8 @@ some_list = list(-1, 3, 4);
 at(some_list, 0); # -1
 mut(some_list, 0, -2); # as in _mutate_
 at(some_list, 0); # -2
+join(list(1), list(2)); # [1, 2]
+len(list(1, 2, 3)); # 3
 
 # dictionaries!
 some_dict = dict("a", 2); # (k, v, k, v, ...)

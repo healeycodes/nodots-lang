@@ -326,6 +326,8 @@ j;
 )
 
 # builtins
+assert_or_log(interpret('len(list(1, 2));').value, 2)
+assert_or_log(interpret('len("ab");').value, 2)
 assert_or_log(interpret('join("a", "b");').value, "ab")
 assert_or_log(interpret('at(join(list("a"), list("b")), 0);').value, "a")
 assert_or_log(interpret('at(join(list("a"), list("b")), 1);').value, "b")
@@ -382,11 +384,11 @@ assert_or_log(
 )
 assert_or_log(
     str(interpret("read();")),
-    "1:1 [error] read() expects two args (string, function), got []",
+    "1:1 [error] read() expects two args [string, function], got []",
 )
 assert_or_log(
     str(interpret("write();")),
-    "1:1 [error] write() expects two args (string, string | number), got []",
+    "1:1 [error] write() expects two args [string, string | number], got []",
 )
 
 # i/o

@@ -177,9 +177,18 @@ class ContinueEscape(Exception):
     pass
 
 
+def format_value(value: Value):
+    # TODO: complete this function for all value types
+    if type(value) == NilValue:
+        return "nil"
+    elif type(value) == ListValue:
+        return [format_value(v) for v in value.value]
+    return value.value
+
+
 def log(line: int, col: int, values: List[Value]):
     for v in values:
-        print(v.value)
+        print(format_value(v))
 
 
 def dictionary(line: int, col: int, values: List[Value]):
@@ -389,7 +398,7 @@ def read(line: int, col: int, values: List[Value]) -> Value:
         raise LanguageError(
             line,
             col,
-            f"read() expects two args (string, function), got {values}",
+            f"read() expects two args [string, function], got {values}",
         )
     values[0].check_type(
         line,
@@ -422,7 +431,7 @@ def write(line: int, col: int, values: List[Value]) -> Value:
         raise LanguageError(
             line,
             col,
-            f"write() expects two args (string, string | number), got {values}",
+            f"write() expects two args [string, string | number], got {values}",
         )
     values[0].check_type(
         line,
@@ -450,7 +459,7 @@ def join(line: int, col: int, values: List[Value]) -> Value:
         raise LanguageError(
             line,
             col,
-            f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+            f"join() expects two args [string, string] or [list, list], got {values}",
         )
 
     # (string, string)
@@ -459,7 +468,7 @@ def join(line: int, col: int, values: List[Value]) -> Value:
             raise LanguageError(
                 line,
                 col,
-                f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values)))}",
+                f"join() expects two args [string, string] or [list, list], got {values}",
             )
         return StringValue(values[0].value + values[1].value)
     elif values[0].__class__.__name__ == "ListValue":
@@ -467,7 +476,7 @@ def join(line: int, col: int, values: List[Value]) -> Value:
             raise LanguageError(
                 line,
                 col,
-                f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values)))}",
+                f"join() expects two args [string, string] or [list, list], got {values}",
             )
         ret = []
         for v in values[0].value:
@@ -478,8 +487,24 @@ def join(line: int, col: int, values: List[Value]) -> Value:
     raise LanguageError(
         line,
         col,
-        f"join() expects two args (string, string) or (list, list), got {', '.join(list(map(lambda v: str(v), values))) or 'no args'}",
+        f"join() expects two args [string, string] or [list, list], got {values}",
     )
+
+
+def length(line: int, col: int, values: List[Value]) -> Value:
+    if len(values) != 1:
+        raise LanguageError(
+            line,
+            col,
+            f"len() expects a single arg (string | list), got {values}",
+        )
+    values[0].check_type(
+        line,
+        col,
+        ["StringValue", "ListValue"],
+        f"len() expects a (string | list)",
+    )
+    return NumberValue(len(values[0].value))
 
 
 def key_from_identifier_node(node: Tree | Token) -> str:
@@ -932,6 +957,7 @@ def inject_builtins(context: Context):
         "read": read,
         "write": write,
         "join": join,
+        "len": length,
     }
     for name, func in funcs.items():
         context.set(name, FunctionValue(func))
