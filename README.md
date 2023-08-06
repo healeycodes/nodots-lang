@@ -35,7 +35,7 @@ join(list(1), list(2)); # [1, 2]
 len(list(1, 2, 3)); # 3
 
 # dictionaries!
-some_dict = dict("a", 2); # (k, v, k, v, ...)
+some_dict = dict("a", 2, "b", 3); # (k, v, k, v, ...)
 mut(some_dict, "a", "hi!");
 at(some_dict, "a"); # "hi!"
 

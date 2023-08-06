@@ -450,7 +450,7 @@ assert_or_log(
 
 # repl
 repl_process = subprocess.Popen(
-    ["python3", "./repl.py"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+    ["python3", "./cli.py"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
 )
 repl_process.stdin.write(b"1;\n") # type: ignore
 repl_process.stdin.flush() # type: ignore
