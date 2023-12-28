@@ -358,7 +358,12 @@ def visit_return_stmt(node: Tree, context: Context):
 
 
 def visit_if_stmt(node: Tree, context: Context):
-    visit_expression(node.children[2], context)
+    line, col = node.meta.line, node.meta.column
+    ntype = visit_expression(node.children[2], context)
+    if type(ntype) != I32:
+        raise Exception(
+            f"type error if: expected {I32()} got {ntype} ({line}:{col})"
+        )
     context.write(
         """(if
       (then\n"""
