@@ -1,3 +1,4 @@
+# similar to grammar.py but for a static typed version of nodots
 GRAMMAR = r"""
     program         : fun_stmt*
 
