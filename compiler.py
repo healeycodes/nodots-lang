@@ -363,26 +363,11 @@ def visit_if_stmt(node: Tree, context: Context):
         """(if
       (then\n"""
     )
-    else_idx = None
     for i in range(3, len(node.children)):
-        if node.children[i] == "else":
-            else_idx = i
-            break
         if isinstance(node.children[i], Token):
             continue
         visit_declaration(node.children[i], context)
-    context.write(")\n")
-
-    if else_idx:
-        context.write("(else\n")
-        for i in range(else_idx + 1, len(node.children)):
-            if node.children[i] == "fi":
-                break
-            if isinstance(node.children[i], Token):
-                continue
-            visit_declaration(node.children[i], context)
-        context.write(")\n")
-    context.write(")\n")
+    context.write(")\n)\n")
 
 
 def compile(source: str, context: Context):
