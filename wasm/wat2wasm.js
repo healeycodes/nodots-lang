@@ -9,17 +9,12 @@ const compile = (source) => {
         const binaryOutput = module.toBinary({ log: true, write_debug_names: true });
         const outputLog = binaryOutput.log;
         const binaryBuffer = binaryOutput.buffer;
-        // binaryBuffer is Uint8Array
-        const outputBase64 = btoa(String.fromCharCode.apply(null, binaryBuffer));
 
         // send debug details to stderr
         console.error({ binaryOutput, outputLog, binaryBuffer })
-        // send base64 wasm binary to stdout
-        console.log(outputBase64)
 
         // test that fib works!
-        const wasmBuffer = Buffer.from(outputBase64, 'base64');
-        WebAssembly.instantiate(wasmBuffer, {})
+        WebAssembly.instantiate(binaryBuffer, {})
             .then(result => {
                 const func = result.instance.exports.fib;
                 console.log('Calling with:', 25)
