@@ -22,8 +22,10 @@ const compile = (source) => {
         WebAssembly.instantiate(wasmBuffer, {})
             .then(result => {
                 const func = result.instance.exports.fib;
-                console.log('Calling with:', 10)
-                console.log('Result:', func(10));
+                console.log('Calling with:', 25)
+                const t = performance.now();
+                console.log('Result:', func(25));
+                console.log('Time:', performance.now() - t);
             })
             .catch(error => {
                 console.error('Error loading WebAssembly module:', error);
