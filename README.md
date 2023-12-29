@@ -7,7 +7,42 @@
 
 <br>
 
-A small programming language without any dots called **nodots**. I had some trouble with a previous language when it came to mutating via dot access – so I decided: no dots this time (okay, fine, you can use dots for floats).
+A small programming language without any dots called **nodots**. There are two versions of this language; static types and a custom WebAssembly compiler (w/ type checking), and dynamic types with a tree-walk interpreter. Both use [Lark](https://lark-parser.readthedocs.io/en/latest/index.html) for parsing.
+
+<br>
+
+## WebAssembly Compiler (static types)
+
+`compiler.py` is a WebAssembly compiler (w/ type checking) that outputs WebAssembly Text Format. See `grammar_static.py` for the grammar.
+
+This version is more experimental than the interpreter but you can compile and run an example program with:
+
+```text
+pip3 install -r requirements.txt
+./compile.sh
+```
+
+The example program is a naive algorithm that calculates the n-th Fibonacci number. It requires ~67million function calls and runs 4000x quicker in the compiled version.
+
+```text
+fn fib(i32 n) -> i32
+  if (n == 0)
+    return 0;
+  fi
+  if (n == 1)
+    return 1;
+  fi
+  return fib(n - 1) + fib(n - 2);
+nf
+```
+
+The binary of this program is 134 bytes when encoded in base64. This is much smaller than: a Python runtime, the Lark parsing library, and a 1k LOC interpreter!
+
+<br>
+
+## Interpreter (dynamic types)
+
+`interpreter.py` is a tree-walk interpreter. See `grammar.py` for the grammar.
 
 Here's an example program (see `tests.py` for more examples).
 
@@ -86,36 +121,17 @@ nuf
 read("./foo", read_function);
 ```
 
-## Install
+### Install
 
 `pip3 install -r requirements.txt`
 
-## Run
+### Run
 
 `python3 cli.py sourcefile`
 
-## Tests
+### Tests
 
 `./test.sh`
 
 - Mypy type checking
 - Tests programs
-
-## More
-
-It's a tree-walk interpreter implemented in Python, using [Lark](https://lark-parser.readthedocs.io/en/latest/index.html) for parsing.
-
-See `grammar.py` for the [EBNF](https://lark-parser.readthedocs.io/en/latest/grammar.html#general-syntax-and-notes)-ish language grammar.
-
-As linked at the top of this README, I've written two blog posts about this project.
-
-- [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
-- [Profiling and Optimizing an Interpreter](https://healeycodes.com/profiling-and-optimizing-an-interpreter)
-
-## Project TODOs
-
-Standard functions:
-- more file/dir/system functions
-- assert()
-- type() / casting
-
