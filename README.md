@@ -2,6 +2,7 @@
 
 # nodots lang
 > My blog posts:
+> - [A Customer WebAssembly Compiler](https://healeycodes.com/a-custom-webassembly-compiler)
 > - [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
 > - [Profiling and Optimizing an Interpreter](https://healeycodes.com/profiling-and-optimizing-an-interpreter)
 
@@ -13,7 +14,7 @@ A small programming language without any dots called **nodots**. There are two v
 
 ## WebAssembly Compiler (static types)
 
-`compiler.py` is a WebAssembly compiler (w/ type checking) that outputs WebAssembly Text Format. See `grammar_static.py` for the grammar.
+`compiler.py` is a WebAssembly compiler (w/ type checking) that outputs WebAssembly Text. See `grammar_static.py` for the grammar.
 
 This version is more experimental than the interpreter but you can compile and run an example program with:
 
@@ -22,7 +23,7 @@ pip3 install -r requirements.txt
 ./compile.sh
 ```
 
-The example program is a naive algorithm that calculates the n-th Fibonacci number. It requires ~67million function calls and runs 4000x quicker in the compiled version.
+The example program is a naive algorithm that calculates the n-th Fibonacci number. It requires ~243k function calls and runs 4000x quicker in the compiled version.
 
 ```text
 fn fib(i32 n) -> i32
