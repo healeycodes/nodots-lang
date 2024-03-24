@@ -13,4 +13,4 @@ for (i = 0; i < 20; i = i + 1)
 rof
 """
 
-interpret(program, opts={"debug": False})
+interpret(program, opts={"debug": False, "profile": True})

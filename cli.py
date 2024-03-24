@@ -10,7 +10,7 @@ def repl():
     lines = []
     prompt = "> "
 
-    root_context = get_context({"debug": False})
+    root_context = get_context({"debug": False, "profile": False})
 
     while True:
         try:
@@ -28,5 +28,9 @@ if len(sys.argv) == 1:
     repl()
     quit()
 
-with open(sys.argv[1]) as f:
-    interpret(f.read(), opts={"debug": False})
+if sys.argv[1] == "--profile":
+    with open(sys.argv[2]) as f:
+        interpret(f.read(), opts={"debug": False, "profile": True})
+else:
+    with open(sys.argv[1]) as f:
+        interpret(f.read(), opts={"debug": False})

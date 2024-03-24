@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Any, Dict, List
+import time
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 import typing
 from lark import Lark, Tree as LarkTree, Token as LarkToken
 from grammar import GRAMMAR
@@ -13,6 +14,14 @@ parser = Lark(
 )
 
 Meta = typing.NamedTuple("Meta", [("line", int), ("column", int)])
+
+
+def format_number(seconds: float) -> str:
+    if seconds >= 1:
+        return f"{round(seconds, 1)}s"
+    elif seconds >= 0.001:
+        return f"{int(seconds * 1000)}ms"
+    return f"{int(seconds * 1000 * 1000)}µs"
 
 
 class Tree:
@@ -73,12 +82,24 @@ class LanguageError(Exception):
         return f"{self.line}:{self.column} [error] {self.message}"
 
 
+class CallsDict(TypedDict):
+    calls: List[Tuple[int, float]]
+
+
 class Context:
-    def __init__(self, parent, opts={"debug": False}):
+    def __init__(
+        self,
+        parent,
+        opts={"debug": False, "profile": False},
+        line_durations: Optional[CallsDict] = None,
+    ):
         self._opts = opts
         self.parent = parent
+        self.children: List[Context] = []
         self.debug = opts["debug"]
+        self.profile = opts["profile"]
         self.lookup = {}
+        self.line_durations: CallsDict = line_durations or {"calls": []}
 
     def set(self, key, value):
         if self.debug:
@@ -100,7 +121,62 @@ class Context:
         raise LanguageError(line, column, f"unknown variable '{key}'")
 
     def get_child_context(self):
-        return Context(self, self._opts)
+        child = Context(self, self._opts, self.line_durations)
+        self.children.append(child)
+        return child
+
+    def track_call(self, line, duration):
+        if self.profile:
+            self.line_durations["calls"].append((line, duration))
+
+    def print_line_profile(self, source: str):
+        line_durations: Dict[int, List[float]] = {}
+        for ln, dur in self.line_durations["calls"]:
+            if ln in line_durations:
+                line_durations[ln].append(dur)
+            else:
+                line_durations[ln] = [dur]
+
+        # convert raw durations into statistics
+        line_info: Dict[int, List[str]] = {}
+        for ln, line in enumerate(source.splitlines()):
+            if ln in line_durations:
+                line_info[ln] = [
+                    # ncalls
+                    f"x{len(line_durations[ln])}",
+                    # tottime
+                    f"{format_number(sum(line_durations[ln]))}",
+                    # percall
+                    f"{format_number((sum(line_durations[ln]) / len(line_durations[ln])))}",
+                ]
+
+        # configure padding/lining up columns
+        padding = 2
+        max_line = max([len(line) for line in source.splitlines()])
+        max_digits = (
+            max(
+                [
+                    max([len(f"{digits}") for digits in info])
+                    for info in line_info.values()
+                ]
+            )
+            + 3  # column padding
+        )
+
+        # iterate source code, printing the line and (if any) its statistics
+        print(" " * (max_line + padding), "ncalls ", "tottime ", "percall ")
+        for i, line in enumerate(source.splitlines()):
+            output = line
+            ln = i + 1
+            if ln in line_info:
+                output += " " * (max_line - len(line) + padding)
+                ncalls = line_info[ln][0]
+                cumtime = line_info[ln][1]
+                percall = line_info[ln][2]
+                output += ncalls + " " * (max_digits - len(ncalls))
+                output += cumtime + " " * (max_digits - len(cumtime))
+                output += percall + " " * (max_digits - len(percall))
+            print(output)
 
 
 class Value:
@@ -204,7 +280,7 @@ def dictionary(line: int, col: int, values: List[Value]):
         key = values[i]
         try:
             key.check_type(
-                line, col, "StringValue", f"only strings or numbers can be keys"
+                line, col, "StringValue", "only strings or numbers can be keys"
             )
         except:
             key.check_type(
@@ -557,6 +633,8 @@ def eval_call(node: Tree | Token, context: Context) -> Value:
                 return StringValue(first_child_str.value[1:-1])
         raise Exception("unreachable")
 
+    start = time.perf_counter()
+
     # functions calls can be chained like `a()()(2)`
     # so we want the initial function and then an
     # arbitrary number of calls (with or without arguments)
@@ -578,11 +656,13 @@ def eval_call(node: Tree | Token, context: Context) -> Value:
                 raise Exception("unreachable")
 
     for args in arguments:
+        start = time.perf_counter()
         current_func = current_func.call_as_func(
             node.children[0].meta.line,
             node.children[0].meta.column,
             eval_arguments(args, context) if args else [],
         )
+        context.track_call(node.children[0].meta.line, time.perf_counter() - start)
 
     return current_func
 
@@ -873,7 +953,8 @@ def eval_function(node: Tree | Token, context: Context) -> NilValue:
     parameters = []
     if node.children.index(")") - node.children.index("(") == 2:  # type: ignore
         parameters = eval_parameters(
-            node.children[node.children.index("(") + 1], context  # type: ignore
+            node.children[node.children.index("(") + 1],
+            context,  # type: ignore
         )
     body = node.children[node.children.index(")") + 1 :]  # type: ignore
 
@@ -999,11 +1080,14 @@ def get_context(opts: Dict[str, bool]) -> Context:
     return root_context
 
 
-def interpret(source: str, opts={"debug": False}):
+def interpret(source: str, opts={}):
+    opts = {"debug": False, "profile": False} | opts
     try:
         root_context = get_context(opts)
         root = get_root(source)
         result = eval_program(root, context=root_context)
+        if opts["profile"]:
+            root_context.print_line_profile(source)
         return result
     except LanguageError as e:
         return e

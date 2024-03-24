@@ -326,7 +326,7 @@ j;
 )
 
 # builtins
-assert_or_log(interpret('len(list(1, 2));').value, 2)
+assert_or_log(interpret("len(list(1, 2));").value, 2)
 assert_or_log(interpret('len("ab");').value, 2)
 assert_or_log(interpret('join("a", "b");').value, "ab")
 assert_or_log(interpret('at(join(list("a"), list("b")), 0);').value, "a")
@@ -452,11 +452,11 @@ assert_or_log(
 repl_process = subprocess.Popen(
     ["python3", "./cli.py"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
 )
-repl_process.stdin.write(b"1;\n") # type: ignore
-repl_process.stdin.flush() # type: ignore
+repl_process.stdin.write(b"1;\n")  # type: ignore
+repl_process.stdin.flush()  # type: ignore
 time.sleep(0.25)  # would prefer not to sleep..
 repl_process.send_signal(signal.SIGINT)
-assert_or_log(repl_process.stdout.read(), b"> 1.0\n> ") # type: ignore
- 
+assert_or_log(repl_process.stdout.read(), b"> 1.0\n> ")  # type: ignore
+
 
 print("tests passed!")
