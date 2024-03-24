@@ -9,6 +9,8 @@
 
 A small programming language without any dots called **nodots**. There are two versions of this language; static types and a custom WebAssembly compiler (w/ type checking), and dynamic types with a tree-walk interpreter. Both use [Lark](https://lark-parser.readthedocs.io/en/latest/index.html) for parsing.
 
+Source files typically have the `.nd` file extension.
+
 <br>
 
 ## WebAssembly Compiler (static types)
@@ -128,6 +130,10 @@ read("./foo", read_function);
 ### Run
 
 `python3 cli.py sourcefile`
+
+### Line Profiler
+
+`python3 cli.py --profile sourcefile`
 
 ### Tests
 

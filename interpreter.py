@@ -83,18 +83,23 @@ class LanguageError(Exception):
 
 
 class CallsDict(TypedDict):
-    line_timings: List[Tuple[int, float]]
+    calls: List[Tuple[int, float]]
 
 
 class Context:
-    def __init__(self, parent, opts={"debug": False, "profile": False}):
+    def __init__(
+        self,
+        parent,
+        opts={"debug": False, "profile": False},
+        line_durations: Optional[CallsDict] = None,
+    ):
         self._opts = opts
         self.parent = parent
         self.children: List[Context] = []
         self.debug = opts["debug"]
         self.profile = opts["profile"]
         self.lookup = {}
-        self.timings: CallsDict = {"calls": []}
+        self.line_durations: CallsDict = line_durations or {"calls": []}
 
     def set(self, key, value):
         if self.debug:
@@ -116,35 +121,25 @@ class Context:
         raise LanguageError(line, column, f"unknown variable '{key}'")
 
     def get_child_context(self):
-        child = Context(self, self._opts)
+        child = Context(self, self._opts, self.line_durations)
         self.children.append(child)
         return child
 
     def track_call(self, line, duration):
         if self.profile:
-            self.timings["calls"].append((line, duration))
+            self.line_durations["calls"].append((line, duration))
 
     def print_line_profile(self, source: str):
-
-        # walk a context tree collecting line durations for a program
-        def walk(c: Context, line_durations: Dict[str, List[float]]):
-            for timing in c.timings["calls"]:
-                line: int = timing[0]
-                duration: float = timing[1]
-                if line in line_durations:
-                    line_durations[line].append(duration)
-                else:
-                    line_durations[line] = [duration]
-            for child in c.children:
-                walk(child, line_durations)
-            return line_durations
-
-        line_durations = walk(self, {})
+        line_durations: Dict[int, List[float]] = {}
+        for ln, dur in self.line_durations["calls"]:
+            if ln in line_durations:
+                line_durations[ln].append(dur)
+            else:
+                line_durations[ln] = [dur]
 
         # convert raw durations into statistics
         line_info: Dict[int, List[str]] = {}
-        for i, line in enumerate(source.splitlines()):
-            ln = i + 1
+        for ln, line in enumerate(source.splitlines()):
             if ln in line_durations:
                 line_info[ln] = [
                     # ncalls
@@ -165,7 +160,7 @@ class Context:
                     for info in line_info.values()
                 ]
             )
-            + 3 # column padding
+            + 3  # column padding
         )
 
         # iterate source code, printing the line and (if any) its statistics
