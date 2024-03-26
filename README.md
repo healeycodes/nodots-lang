@@ -2,6 +2,7 @@
 
 # nodots lang
 > My blog posts:
+> - [Adding a Line Profiler to My Language](https://healeycodes.com/adding-a-line-profiler-to-my-language)
 > - [A Custom WebAssembly Compiler](https://healeycodes.com/a-custom-webassembly-compiler)
 > - [Adding For Loops to an Interpreter](https://healeycodes.com/adding-for-loops-to-an-interpreter)
 > - [Profiling and Optimizing an Interpreter](https://healeycodes.com/profiling-and-optimizing-an-interpreter)
